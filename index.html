@@ -558,27 +558,41 @@
         }
 
         async function saveBulkMedia() {
-            const rawText = document.getElementById('bulkTitles').value;
-            const type = document.getElementById('bulkType').value;
-            const status = document.getElementById('bulkStatus').value;
+            async function saveBulkMedia() {
+    const rawText = document.getElementById('bulkTitles').value;
+    const type = document.getElementById('bulkType').value;
+    const status = document.getElementById('bulkStatus').value;
 
-            const titles = rawText.split('\n').map(t => t.trim()).filter(t => t.length > 0);
-            if (titles.length === 0) return alert("Lütfen en az bir tane içerik adı yazın!");
+    // Alt satırlara (\n) göre isimleri bölüyoruz
+    const titles = rawText
+        .split(/\r?\n/)
+        .map(t => t.trim())
+        .filter(t => t.length > 0);
 
-            const batch = db.batch();
-            titles.forEach(title => {
-                const docRef = db.collection("users").doc(currentUser.uid).collection("media").doc();
-                batch.set(docRef, {
-                    title, type, status, rating: "8", notes: "Toplu eklendi.", createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            });
+    if (titles.length === 0) return alert("Lütfen en az bir tane içerik adı yazın!");
 
-            await batch.commit();
-            closeAddModal();
-            document.getElementById('bulkTitles').value = '';
-            alert(`${titles.length} adet içerik başarıyla arşive eklendi! 🎉`);
-        }
+    const batch = db.batch();
+    titles.forEach(title => {
+        const docRef = db.collection("users").doc(currentUser.uid).collection("media").doc();
+        batch.set(docRef, {
+            title, 
+            type, 
+            status, 
+            rating: "8", 
+            notes: "Toplu eklendi.", 
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    });
 
+    try {
+        await batch.commit();
+        closeAddModal();
+        document.getElementById('bulkTitles').value = '';
+        alert(`${titles.length} adet içerik başarıyla arşive eklendi! 🎉`);
+    } catch (err) {
+        alert("Ekleme hatası: " + err.message);
+    }
+}
         async function deleteMedia(docId) {
             if (confirm("Silmek istediğine emin misin?")) {
                 await db.collection("users").doc(currentUser.uid).collection("media").doc(docId).delete();
