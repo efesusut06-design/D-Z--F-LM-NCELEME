@@ -110,7 +110,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid var(--border);
             flex-wrap: wrap;
@@ -127,6 +127,38 @@
             padding: 0.5rem 1rem;
             font-size: 0.85rem;
             width: auto;
+        }
+
+        /* ÜST KATEGORİ SEKMELERİ */
+        .category-tabs {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: var(--text);
+            border-color: var(--accent);
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
         }
 
         .controls {
@@ -167,19 +199,6 @@
         }
 
         .card-title { font-size: 1.2rem; font-weight: 700; }
-        
-        .card-badge {
-            font-size: 0.7rem;
-            padding: 0.2rem 0.5rem;
-            border-radius: 20px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .badge-gerçek-dizi { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
-        .badge-çizgi-dizi { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-        .badge-gerçek-film { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
-        .badge-çizgi-film-filmi { background: rgba(16, 185, 129, 0.2); color: #34d399; }
 
         .status-select {
             padding: 0.3rem 0.6rem;
@@ -208,6 +227,12 @@
             border-top: 1px solid var(--border);
             padding-top: 0.75rem;
             margin-top: 0.5rem;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
         }
 
         .modal {
@@ -251,7 +276,7 @@
         <h2 id="authTitle">Giriş Yap</h2>
         <div class="form-group">
             <label>E-posta Adresi</label>
-            <input type="email" id="authEmail" placeholder="bunla girme haaa">
+            <input type="email" id="authEmail" placeholder="ornek@mail.com">
         </div>
         <div class="form-group">
             <label>Şifre</label>
@@ -266,7 +291,7 @@
         <header>
             <div>
                 <h1>Kişisel Medya Arşivim</h1>
-                <p style="color: var(--text-muted);">Dizi ve Filmlerini Tek Yerden Yönet</p>
+                <p style="color: var(--text-muted);">Sekmeler arası geçiş yaparak listeni yönet</p>
             </div>
             <div class="user-info">
                 <span id="userEmailDisplay" style="color: var(--accent);"></span>
@@ -274,17 +299,17 @@
             </div>
         </header>
 
-        <div class="controls">
-            <input type="text" id="searchInput" class="search-input" placeholder="İçerik ara..." oninput="renderList()">
-            
-            <select id="typeFilter" class="filter-select" onchange="renderList()">
-                <option value="ALL">Tüm Kategoriler</option>
-                <option value="Gerçek Dizi">Gerçek Dizi</option>
-                <option value="Çizgi Dizi">Çizgi Dizi</option>
-                <option value="Gerçek Film">Gerçek Film</option>
-                <option value="Çizgi Film Filmi">Çizgi Film Filmi</option>
-            </select>
+        <!-- ÜST KATEGORİ SEKMELERİ -->
+        <div class="category-tabs">
+            <button class="tab-btn active" onclick="switchCategory('Gerçek Dizi', this)">Gerçek Dizi</button>
+            <button class="tab-btn" onclick="switchCategory('Çizgi Dizi', this)">Çizgi Dizi</button>
+            <button class="tab-btn" onclick="switchCategory('Gerçek Film', this)">Gerçek Film</button>
+            <button class="tab-btn" onclick="switchCategory('Çizgi Film Filmi', this)">Çizgi Film Filmi</button>
+        </div>
 
+        <div class="controls">
+            <input type="text" id="searchInput" class="search-input" placeholder="Bu sekmede ara..." oninput="renderList()">
+            
             <select id="statusFilter" class="filter-select" onchange="renderList()">
                 <option value="ALL">Tüm Durumlar</option>
                 <option value="İzledim">İzledim</option>
@@ -299,22 +324,23 @@
         <div id="mediaGrid" class="grid-list"></div>
     </div>
 
-    <!-- EKLEME MODALI (Tekli ve Toplu Ekleme Sekmeli) -->
+    <!-- EKLEME / DÜZENLEME MODALI -->
     <div id="addModal" class="modal">
         <div class="modal-content">
             <button class="close-btn" onclick="closeAddModal()">&times;</button>
-            <h3 style="margin-bottom: 1rem;">Arşive Yeni İçerik Ekle</h3>
+            <h3 id="modalTitle" style="margin-bottom: 1rem;">Arşive Yeni İçerik Ekle</h3>
             
-            <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-                <button class="btn btn-sm" id="tabSingleBtn" onclick="switchTab('single')">Tekli Ekle</button>
-                <button class="btn btn-sm btn-secondary" id="tabBulkBtn" onclick="switchTab('bulk')">⚡ Toplu Ekle (Listeden)</button>
+            <div id="modeTabs" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                <button class="btn btn-sm" id="tabSingleBtn" onclick="switchAddMode('single')">Tekli Ekle</button>
+                <button class="btn btn-sm btn-secondary" id="tabBulkBtn" onclick="switchAddMode('bulk')">⚡ Toplu Ekle</button>
             </div>
 
-            <!-- TEKLİ EKLEME FORMU -->
+            <!-- TEKLİ EKLEME / DÜZENLEME -->
             <div id="singleForm">
+                <input type="hidden" id="editDocId">
                 <div class="form-group">
                     <label>İçerik Adı</label>
-                    <input type="text" id="addTitle" placeholder="Örn: The Mentalist">
+                    <input type="text" id="addTitle" placeholder="Örn: Gravity Falls">
                 </div>
 
                 <div class="form-group">
@@ -346,21 +372,21 @@
                     <textarea id="addNotes" rows="3" placeholder="Bu yapım hakkında ne düşünüyorsun?"></textarea>
                 </div>
 
-                <button class="btn" onclick="saveSingleMedia()">Tekli Kaydet</button>
+                <button class="btn" id="saveSingleBtn" onclick="saveSingleMedia()">Kaydet</button>
             </div>
 
-            <!-- TOPLU EKLEME FORMU -->
+            <!-- TOPLU EKLEME -->
             <div id="bulkForm" class="hidden">
                 <div class="form-group">
                     <label>Toplu İsimler (Her satıra bir tane yaz)</label>
-                    <textarea id="bulkTitles" rows="6" placeholder="Adventure Time&#10;Regular Show&#10;The Mentalist&#10;Gravity Falls"></textarea>
+                    <textarea id="bulkTitles" rows="6" placeholder="Adventure Time&#10;Regular Show&#10;Gravity Falls"></textarea>
                 </div>
 
                 <div class="form-group">
                     <label>Hepsine Verilecek Kategori</label>
                     <select id="bulkType">
-                        <option value="Çizgi Dizi">Çizgi Dizi</option>
                         <option value="Gerçek Dizi">Gerçek Dizi</option>
+                        <option value="Çizgi Dizi">Çizgi Dizi</option>
                         <option value="Gerçek Film">Gerçek Film</option>
                         <option value="Çizgi Film Filmi">Çizgi Film Filmi</option>
                     </select>
@@ -387,7 +413,8 @@
             projectId: "dizi-film-inceleme",
             storageBucket: "dizi-film-inceleme.firebasestorage.app",
             messagingSenderId: "312662138028",
-            appId: "1:312662138028:web:dd1cbc0458986142c71309"
+            appId: "1:312662138028:web:dd1cbc0458986142c71309",
+            measurementId: "G-TLYDP590LC"
         };
 
         firebase.initializeApp(firebaseConfig);
@@ -398,6 +425,7 @@
         let currentUser = null;
         let mediaList = [];
         let isAscending = true;
+        let currentCategory = "Gerçek Dizi";
 
         function toggleAuthMode() {
             isLoginMode = !isLoginMode;
@@ -444,37 +472,42 @@
                 });
         }
 
+        function switchCategory(categoryName, btnElement) {
+            currentCategory = categoryName;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+            renderList();
+        }
+
         function renderList() {
             const grid = document.getElementById('mediaGrid');
             grid.innerHTML = '';
 
             const searchQuery = document.getElementById('searchInput').value.toLowerCase();
-            const selectedType = document.getElementById('typeFilter').value;
             const selectedStatus = document.getElementById('statusFilter').value;
 
             let filtered = mediaList.filter(item => {
+                const matchesCategory = item.type === currentCategory;
                 const matchesSearch = item.title.toLowerCase().includes(searchQuery) || (item.notes && item.notes.toLowerCase().includes(searchQuery));
-                const matchesType = selectedType === 'ALL' || item.type === selectedType;
                 const matchesStatus = selectedStatus === 'ALL' || item.status === selectedStatus;
-                return matchesSearch && matchesType && matchesStatus;
+                return matchesCategory && matchesSearch && matchesStatus;
             });
 
             filtered.sort((a, b) => isAscending ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title));
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 2rem;">Bu sekmede henüz içerik bulunmuyor.</p>`;
+                return;
+            }
 
             filtered.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'media-card';
 
-                let badgeClass = 'badge-gerçek-dizi';
-                if (item.type === 'Çizgi Dizi') badgeClass = 'badge-çizgi-dizi';
-                else if (item.type === 'Gerçek Film') badgeClass = 'badge-gerçek-film';
-                else if (item.type === 'Çizgi Film Filmi') badgeClass = 'badge-çizgi-film-filmi';
-
                 card.innerHTML = `
                     <div>
                         <div class="card-header">
                             <div class="card-title">${item.title}</div>
-                            <span class="card-badge ${badgeClass}">${item.type}</span>
                         </div>
                         <div class="card-rating">★ ${item.rating || '-'}/10</div>
                         <p class="card-notes">${item.notes || 'Not eklenmedi.'}</p>
@@ -486,7 +519,10 @@
                             <option value="İzliyorum" ${item.status === 'İzliyorum' ? 'selected' : ''}>⏳ İzliyorum</option>
                             <option value="İzledim" ${item.status === 'İzledim' ? 'selected' : ''}>✅ İzledim</option>
                         </select>
-                        <button style="background:none; border:none; color:var(--danger); cursor:pointer;" onclick="deleteMedia('${item.id}')">Sil</button>
+                        <div class="card-actions">
+                            <button style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:600; font-size:0.85rem;" onclick='openEditModal(${JSON.stringify(item)})'>Düzenle</button>
+                            <button style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:600; font-size:0.85rem;" onclick="deleteMedia('${item.id}')">Sil</button>
+                        </div>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -498,6 +534,7 @@
         }
 
         async function saveSingleMedia() {
+            const editId = document.getElementById('editDocId').value;
             const title = document.getElementById('addTitle').value;
             const type = document.getElementById('addType').value;
             const status = document.getElementById('addStatus').value;
@@ -506,12 +543,18 @@
 
             if (!title) return alert("Lütfen içerik adı girin!");
 
-            await db.collection("users").doc(currentUser.uid).collection("media").add({
-                title, type, status, rating, notes, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            if (editId) {
+                // Güncelleme işlemi
+                await db.collection("users").doc(currentUser.uid).collection("media").doc(editId).update({
+                    title, type, status, rating, notes
+                });
+            } else {
+                // Yeni ekleme işlemi
+                await db.collection("users").doc(currentUser.uid).collection("media").add({
+                    title, type, status, rating, notes, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
             closeAddModal();
-            document.getElementById('addTitle').value = '';
-            document.getElementById('addNotes').value = '';
         }
 
         async function saveBulkMedia() {
@@ -547,10 +590,38 @@
             renderList();
         }
 
-        function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
+        function openAddModal() { 
+            document.getElementById('editDocId').value = '';
+            document.getElementById('modalTitle').textContent = "Arşive Yeni İçerik Ekle";
+            document.getElementById('modeTabs').style.display = 'flex';
+            document.getElementById('bulkForm').classList.add('hidden');
+            document.getElementById('singleForm').classList.remove('hidden');
+            
+            document.getElementById('addTitle').value = '';
+            document.getElementById('addNotes').value = '';
+            document.getElementById('addType').value = currentCategory;
+            document.getElementById('addModal').style.display = 'flex'; 
+        }
+
+        function openEditModal(item) {
+            document.getElementById('editDocId').value = item.id;
+            document.getElementById('modalTitle').textContent = "İçeriği Düzenle";
+            document.getElementById('modeTabs').style.display = 'none'; // Düzenlerken toplu ekleme sekmesini gizle
+            document.getElementById('bulkForm').classList.add('hidden');
+            document.getElementById('singleForm').classList.remove('hidden');
+
+            document.getElementById('addTitle').value = item.title || '';
+            document.getElementById('addType').value = item.type || currentCategory;
+            document.getElementById('addStatus').value = item.status || 'İzlemedim';
+            document.getElementById('addRating').value = item.rating || '8';
+            document.getElementById('addNotes').value = item.notes || '';
+
+            document.getElementById('addModal').style.display = 'flex';
+        }
+
         function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
 
-        function switchTab(mode) {
+        function switchAddMode(mode) {
             if (mode === 'single') {
                 document.getElementById('singleForm').classList.remove('hidden');
                 document.getElementById('bulkForm').classList.add('hidden');
