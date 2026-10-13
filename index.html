@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kişisel Medya Arşivim</title>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 1.5rem;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .auth-container {
+            max-width: 400px;
+            margin: 4rem auto;
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+        }
+
+        .auth-container h2 {
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: var(--accent);
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover { background: var(--accent-hover); }
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+        .btn-secondary:hover { background: var(--border); color: var(--text); }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            width: auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .search-input { flex: 1; min-width: 200px; }
+        .filter-select { width: auto; min-width: 150px; }
+
+        .grid-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .media-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s;
+        }
+
+        .media-card:hover { transform: translateY(-4px); }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+            gap: 0.5rem;
+        }
+
+        .card-title { font-size: 1.2rem; font-weight: 700; }
+        
+        .card-badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 20px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-gerçek-dizi { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+        .badge-çizgi-dizi { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .badge-gerçek-film { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
+        .badge-çizgi-film-filmi { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+        .status-select {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            margin-top: 0.5rem;
+            cursor: pointer;
+        }
+
+        .card-rating { color: #facc15; font-weight: bold; margin: 0.5rem 0; }
+        .card-notes {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-top: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 550px;
+            width: 100%;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 1rem; right: 1rem;
+            background: none; border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem; cursor: pointer;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- GİRİŞ & KAYIT -->
+    <div id="authSection" class="auth-container">
+        <h2 id="authTitle">Giriş Yap</h2>
+        <div class="form-group">
+            <label>E-posta Adresi</label>
+            <input type="email" id="authEmail" placeholder="ornek@mail.com">
+        </div>
+        <div class="form-group">
+            <label>Şifre</label>
+            <input type="password" id="authPassword" placeholder="******">
+        </div>
+        <button class="btn" id="authPrimaryBtn" onclick="handleAuth()">Giriş Yap</button>
+        <button class="btn btn-secondary" id="authToggleBtn" onclick="toggleAuthMode()">Hesabın yok mu? Kayıt Ol</button>
+    </div>
+
+    <!-- ANA PANEL -->
+    <div id="appSection" class="container hidden">
+        <header>
+            <div>
+                <h1>Kişisel Medya Arşivim</h1>
+                <p style="color: var(--text-muted);">Dizi ve Filmlerini Tek Yerden Yönet</p>
+            </div>
+            <div class="user-info">
+                <span id="userEmailDisplay" style="color: var(--accent);"></span>
+                <button class="btn btn-secondary btn-sm" onclick="logout()">Çıkış Yap</button>
+            </div>
+        </header>
+
+        <div class="controls">
+            <input type="text" id="searchInput" class="search-input" placeholder="İçerik ara..." oninput="renderList()">
+            
+            <select id="typeFilter" class="filter-select" onchange="renderList()">
+                <option value="ALL">Tüm Kategoriler</option>
+                <option value="Gerçek Dizi">Gerçek Dizi</option>
+                <option value="Çizgi Dizi">Çizgi Dizi</option>
+                <option value="Gerçek Film">Gerçek Film</option>
+                <option value="Çizgi Film Filmi">Çizgi Film Filmi</option>
+            </select>
+
+            <select id="statusFilter" class="filter-select" onchange="renderList()">
+                <option value="ALL">Tüm Durumlar</option>
+                <option value="İzledim">İzledim</option>
+                <option value="İzliyorum">İzliyorum</option>
+                <option value="İzlemedim">İzlemedim</option>
+            </select>
+
+            <button class="btn btn-sm" style="width: auto;" onclick="toggleSort()">A-Z Sırala</button>
+            <button class="btn btn-sm" style="width: auto; background: var(--success);" onclick="openAddModal()">+ İçerik Ekle</button>
+        </div>
+
+        <div id="mediaGrid" class="grid-list"></div>
+    </div>
+
+    <!-- EKLEME MODALI (Tekli ve Toplu Ekleme Sekmeli) -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeAddModal()">&times;</button>
+            <h3 style="margin-bottom: 1rem;">Arşive Yeni İçerik Ekle</h3>
+            
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                <button class="btn btn-sm" id="tabSingleBtn" onclick="switchTab('single')">Tekli Ekle</button>
+                <button class="btn btn-sm btn-secondary" id="tabBulkBtn" onclick="switchTab('bulk')">⚡ Toplu Ekle (Listeden)</button>
+            </div>
+
+            <!-- TEKLİ EKLEME FORMU -->
+            <div id="singleForm">
+                <div class="form-group">
+                    <label>İçerik Adı</label>
+                    <input type="text" id="addTitle" placeholder="Örn: The Mentalist">
+                </div>
+
+                <div class="form-group">
+                    <label>Kategori</label>
+                    <select id="addType">
+                        <option value="Gerçek Dizi">Gerçek Dizi</option>
+                        <option value="Çizgi Dizi">Çizgi Dizi</option>
+                        <option value="Gerçek Film">Gerçek Film</option>
+                        <option value="Çizgi Film Filmi">Çizgi Film Filmi</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Durum</label>
+                    <select id="addStatus">
+                        <option value="İzlemedim">İzlemedim</option>
+                        <option value="İzliyorum">Şu An İzliyorum</option>
+                        <option value="İzledim">İzledim</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Puan (1-10)</label>
+                    <input type="number" id="addRating" min="1" max="10" value="8">
+                </div>
+
+                <div class="form-group">
+                    <label>Notlarım / Düşüncelerim</label>
+                    <textarea id="addNotes" rows="3" placeholder="Bu yapım hakkında ne düşünüyorsun?"></textarea>
+                </div>
+
+                <button class="btn" onclick="saveSingleMedia()">Tekli Kaydet</button>
+            </div>
+
+            <!-- TOPLU EKLEME FORMU -->
+            <div id="bulkForm" class="hidden">
+                <div class="form-group">
+                    <label>Toplu İsimler (Her satıra bir tane yaz)</label>
+                    <textarea id="bulkTitles" rows="6" placeholder="Adventure Time&#10;Regular Show&#10;The Mentalist&#10;Gravity Falls"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Hepsine Verilecek Kategori</label>
+                    <select id="bulkType">
+                        <option value="Çizgi Dizi">Çizgi Dizi</option>
+                        <option value="Gerçek Dizi">Gerçek Dizi</option>
+                        <option value="Gerçek Film">Gerçek Film</option>
+                        <option value="Çizgi Film Filmi">Çizgi Film Filmi</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Başlangıç Durumu</label>
+                    <select id="bulkStatus">
+                        <option value="İzledim">İzledim</option>
+                        <option value="İzlemedim">İzlemedim</option>
+                        <option value="İzliyorum">Şu An İzliyorum</option>
+                    </select>
+                </div>
+
+                <button class="btn" style="background: var(--success);" onclick="saveBulkMedia()">Hepsini Arşive Ekle 🚀</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "BURAYA_KENDI_API_KEYINI_YAZ",
+            authDomain: "PROJE_ADI.firebaseapp.com",
+            projectId: "PROJE_ADI",
+            storageBucket: "PROJE_ADI.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let isLoginMode = true;
+        let currentUser = null;
+        let mediaList = [];
+        let isAscending = true;
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('authTitle').textContent = isLoginMode ? "Giriş Yap" : "Kayıt Ol";
+            document.getElementById('authPrimaryBtn').textContent = isLoginMode ? "Giriş Yap" : "Kayıt Ol";
+            document.getElementById('authToggleBtn').textContent = isLoginMode ? "Hesabın yok mu? Kayıt Ol" : "Zaten hesabın var mı? Giriş Yap";
+        }
+
+        async function handleAuth() {
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            if (!email || !password) return alert("Lütfen mail ve şifre girin!");
+            try {
+                if (isLoginMode) {
+                    await auth.signInWithEmailAndPassword(email, password);
+                } else {
+                    await auth.createUserWithEmailAndPassword(email, password);
+                }
+            } catch (err) { alert("Hata: " + err.message); }
+        }
+
+        function logout() { auth.signOut(); }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('appSection').classList.remove('hidden');
+                document.getElementById('userEmailDisplay').textContent = user.email;
+                fetchUserMedia();
+            } else {
+                currentUser = null;
+                document.getElementById('authSection').classList.remove('hidden');
+                document.getElementById('appSection').classList.add('hidden');
+            }
+        });
+
+        function fetchUserMedia() {
+            db.collection("users").doc(currentUser.uid).collection("media")
+                .onSnapshot(snapshot => {
+                    mediaList = [];
+                    snapshot.forEach(doc => { mediaList.push({ id: doc.id, ...doc.data() }); });
+                    renderList();
+                });
+        }
+
+        function renderList() {
+            const grid = document.getElementById('mediaGrid');
+            grid.innerHTML = '';
+
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const selectedType = document.getElementById('typeFilter').value;
+            const selectedStatus = document.getElementById('statusFilter').value;
+
+            let filtered = mediaList.filter(item => {
+                const matchesSearch = item.title.toLowerCase().includes(searchQuery) || (item.notes && item.notes.toLowerCase().includes(searchQuery));
+                const matchesType = selectedType === 'ALL' || item.type === selectedType;
+                const matchesStatus = selectedStatus === 'ALL' || item.status === selectedStatus;
+                return matchesSearch && matchesType && matchesStatus;
+            });
+
+            filtered.sort((a, b) => isAscending ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title));
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'media-card';
+
+                let badgeClass = 'badge-gerçek-dizi';
+                if (item.type === 'Çizgi Dizi') badgeClass = 'badge-çizgi-dizi';
+                else if (item.type === 'Gerçek Film') badgeClass = 'badge-gerçek-film';
+                else if (item.type === 'Çizgi Film Filmi') badgeClass = 'badge-çizgi-film-filmi';
+
+                card.innerHTML = `
+                    <div>
+                        <div class="card-header">
+                            <div class="card-title">${item.title}</div>
+                            <span class="card-badge ${badgeClass}">${item.type}</span>
+                        </div>
+                        <div class="card-rating">★ ${item.rating || '-'}/10</div>
+                        <p class="card-notes">${item.notes || 'Not eklenmedi.'}</p>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <select class="status-select" onchange="updateStatus('${item.id}', this.value)">
+                            <option value="İzlemedim" ${item.status === 'İzlemedim' ? 'selected' : ''}>❌ İzlemedim</option>
+                            <option value="İzliyorum" ${item.status === 'İzliyorum' ? 'selected' : ''}>⏳ İzliyorum</option>
+                            <option value="İzledim" ${item.status === 'İzledim' ? 'selected' : ''}>✅ İzledim</option>
+                        </select>
+                        <button style="background:none; border:none; color:var(--danger); cursor:pointer;" onclick="deleteMedia('${item.id}')">Sil</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        async function updateStatus(docId, newStatus) {
+            await db.collection("users").doc(currentUser.uid).collection("media").doc(docId).update({ status: newStatus });
+        }
+
+        async function saveSingleMedia() {
+            const title = document.getElementById('addTitle').value;
+            const type = document.getElementById('addType').value;
+            const status = document.getElementById('addStatus').value;
+            const rating = document.getElementById('addRating').value;
+            const notes = document.getElementById('addNotes').value;
+
+            if (!title) return alert("Lütfen içerik adı girin!");
+
+            await db.collection("users").doc(currentUser.uid).collection("media").add({
+                title, type, status, rating, notes, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            closeAddModal();
+            document.getElementById('addTitle').value = '';
+            document.getElementById('addNotes').value = '';
+        }
+
+        async function saveBulkMedia() {
+            const rawText = document.getElementById('bulkTitles').value;
+            const type = document.getElementById('bulkType').value;
+            const status = document.getElementById('bulkStatus').value;
+
+            const titles = rawText.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+            if (titles.length === 0) return alert("Lütfen en az bir tane içerik adı yazın!");
+
+            const batch = db.batch();
+            titles.forEach(title => {
+                const docRef = db.collection("users").doc(currentUser.uid).collection("media").doc();
+                batch.set(docRef, {
+                    title, type, status, rating: "8", notes: "Toplu eklendi.", createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            });
+
+            await batch.commit();
+            closeAddModal();
+            document.getElementById('bulkTitles').value = '';
+            alert(`${titles.length} adet içerik başarıyla arşive eklendi! 🎉`);
+        }
+
+        async function deleteMedia(docId) {
+            if (confirm("Silmek istediğine emin misin?")) {
+                await db.collection("users").doc(currentUser.uid).collection("media").doc(docId).delete();
+            }
+        }
+
+        function toggleSort() {
+            isAscending = !isAscending;
+            renderList();
+        }
+
+        function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
+        function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+
+        function switchTab(mode) {
+            if (mode === 'single') {
+                document.getElementById('singleForm').classList.remove('hidden');
+                document.getElementById('bulkForm').classList.add('hidden');
+                document.getElementById('tabSingleBtn').classList.remove('btn-secondary');
+                document.getElementById('tabBulkBtn').classList.add('btn-secondary');
+            } else {
+                document.getElementById('singleForm').classList.add('hidden');
+                document.getElementById('bulkForm').classList.remove('hidden');
+                document.getElementById('tabBulkBtn').classList.remove('btn-secondary');
+                document.getElementById('tabSingleBtn').classList.add('btn-secondary');
+            }
+        }
+    </script>
+</body>
+</html>
